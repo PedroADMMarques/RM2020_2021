@@ -1,0 +1,606 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>smoothie module &#8212; TSC Exam 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">TSC Exam 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-smoothie">
+<span id="smoothie-module"></span><h1>smoothie module<a class="headerlink" href="#module-smoothie" title="Permalink to this headline">¶</a></h1>
+<p>Created on Mon Apr 12 13:56:57 2021</p>
+<p>&#64;author: pedro</p>
+<dl class="function">
+<dt id="smoothie.value_from_coeffs">
+<code class="descclassname">smoothie.</code><code class="descname">value_from_coeffs</code><span class="sig-paren">(</span><em>coeff</em>, <em>x_i</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#value_from_coeffs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.value_from_coeffs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain function value from the coefficients in a polynomial fit at x-value
+<em>x_i</em>.</p>
+<dl class="docutils">
+<dt><strong>Inputs</strong></dt>
+<dd><ul class="first last simple">
+<li><em>coeff</em>: array of coefficients for polynomial fit</li>
+<li><em>x_i</em>: value at which the polynomial fit is computed</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>y_i</em>: result of the polynomial fit at <em>x_i</em></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="smoothie.value_from_fit">
+<code class="descclassname">smoothie.</code><code class="descname">value_from_fit</code><span class="sig-paren">(</span><em>x_data</em>, <em>y_data</em>, <em>n_pol</em>, <em>x_i</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#value_from_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.value_from_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain data point from the polynomial fit of data. The real data is fitted
+with a polynomial of n_pol order, and the property is evaluated at temperature
+(or other condition) <em>x_i</em>.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>x_data</em>: data in the x-axis</li>
+<li><em>y_data</em>: data in the y-axis</li>
+<li><em>n_pol</em>: order of the polynomial</li>
+<li><em>x_i</em>: value at which the polynomial fit is computed</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd>Result of the polynomial fit at <em>x_i</em></dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="smoothie.property_value">
+<code class="descclassname">smoothie.</code><code class="descname">property_value</code><span class="sig-paren">(</span><em>y</em>, <em>x_i</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#property_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.property_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain fluid property value (from coefficients or constant value) for a
+given temperature (or other condition) <em>x_i</em>.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt><em>y</em>: Can be either a scalar or an array. If it is a scalar, then y corres-</dt>
+<dd>ponds to the actual property of the fluid. If it is an array, the it
+corresponds to the array of coefficients of the polynomial fit as a
+function of <em>x_i</em></dd>
+</dl>
+</li>
+<li><em>x_i</em>: data in the x-axis for the polynomial fit (temperature [K])</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd>Fluid property <em>y</em> at temperature <em>x_i</em></dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="smoothie.clausius_clapeyron_p">
+<code class="descclassname">smoothie.</code><code class="descname">clausius_clapeyron_p</code><span class="sig-paren">(</span><em>R_v</em>, <em>dh</em>, <em>p_sat_ref</em>, <em>T_sat_ref</em>, <em>T_sat</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#clausius_clapeyron_p"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.clausius_clapeyron_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clausius-Clapeyron equation that relates saturation temperature to saturation
+pressure in a vapor phase given reference conditions <em>T_sat_ref</em> &amp; <em>p_sat_ref</em>.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>R_v</em>: ideal gas constant for the vapor phase [J/kgK]</li>
+<li><em>dh</em>: latent heat of vaporization/evaporation [J/kg]</li>
+<li><em>p_sat_ref</em>: saturation pressure at reference conditions [Pa]</li>
+<li><em>T_sat_ref</em>: saturation temperature at reference conditions [K]</li>
+<li><em>T_sat</em>: saturation temperature [K]</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd>Saturation pressure for saturation temperature T_sat [Pa]</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="smoothie.get_mass_and_volumes">
+<code class="descclassname">smoothie.</code><code class="descname">get_mass_and_volumes</code><span class="sig-paren">(</span><em>t</em>, <em>Tl</em>, <em>Tg</em>, <em>pg</em>, <em>inert</em>, <em>fluid</em>, <em>slosh</em>, <em>ma_0</em>, <em>ml_0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#get_mass_and_volumes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.get_mass_and_volumes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute mass and volume of the vapor/liquid from the input temperature and 
+pressure data. This is possible if initial inert gas and liquid mass are
+known. In addition, the ideal gas law is used as an assumption in the
+intermediate calculations.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>t</em>: time array information [s]</li>
+<li><em>Tl</em>: liquid temperature [K]</li>
+<li><em>Tg</em>: ullage temperature [K]</li>
+<li><em>pg</em>: ullage pressure [Pa]</li>
+<li><em>R_a</em>: inert gas ideal gas constant [J/kgK]</li>
+<li><em>R_v</em>: vapor ideal gas constant [J/kgK]</li>
+<li><em>fluid</em>: object that contains all liquid and vapor properties</li>
+<li><em>inert</em>: object that contains all inert gas properties</li>
+<li><em>slosh</em>: object that contains all sloshing properties</li>
+<li><em>ma_0</em>: inert gas mass [kg]</li>
+<li><em>ml_0</em>: liquid mass [kg]</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>mv</em>: vapor mass over time [kg]</li>
+<li><em>ml</em>: liquid mass over time [kg]</li>
+<li><em>Vl</em>: liquid volume over time [m3]</li>
+<li><em>Vg</em>: vapor volume over time [m3]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="smoothie.Fluid">
+<em class="property">class </em><code class="descclassname">smoothie.</code><code class="descname">Fluid</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Fluid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Fluid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize fluid properties for the vapor and liquid phases. This class is
+initialized by inserting the name of the working fluid (i.e. H2, N2 or 
+HFE7200) and importing its properties from from a separate Python script.
+The H2 and N2 properties were obtained from the NIST (National Institute of
+Standards and Technology). The HFE7200 properties are more tricky to find,
+so they were derived from three distinct sources:</p>
+<blockquote>
+<div><ul class="simple">
+<li>3M Novec 7200 Engineered Fluid Product Information</li>
+<li>Pramod Warrier and Amyn S. Teja [2011]</li>
+<li>Rausch et. al [2015]</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt><strong>Constant fluid properties:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>M_v</em>: Molar mass of the vapor species [kg/ml]</li>
+<li><em>R_v</em>: Ideal gas constant of the vapor [J/kgK]</li>
+<li><em>gamma</em>: Ratio of specific heats [-]</li>
+<li><em>T_sat_ref</em>: Reference saturation temperature [K]</li>
+<li><em>p_sat_ref</em>: Reference saturation pressure [Pa]</li>
+</ul>
+</dd>
+<dt><strong>Temperature-dependent properties:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>rho_l</em>: Polynomial coefficients for liquid density</li>
+<li><em>k_l</em>: Polynomial coefficients for liquid thermal conductivity</li>
+<li><em>cv_l</em>: Polynomial coefficients for liquid specific heat at constant volume</li>
+<li><em>mu_l</em>: Polynomial coefficients for liquid dynamic viscosity</li>
+<li><em>sigma</em>: Polynomial coefficients for the surface tension</li>
+<li><em>k_v</em>: Polynomial coefficients for the vapor thermal conductivity</li>
+<li><em>cv_v</em>: Polynomial coefficients for the vapor specific heat at constant volume</li>
+<li><em>mu_v</em>: Polynomial coefficients for the vapor dynamic viscosity</li>
+<li><em>dh</em>: Polynomial coefficients for the  latent heat for vaporization/condensation</li>
+</ul>
+</dd>
+</dl>
+<p>The properties were obtained in saturation conditions for different temperatures.
+Then, they were fitted with a high order polynomial and the coefficients are
+stored in each respective variable.</p>
+<dl class="method">
+<dt id="smoothie.Fluid.get_liq_properties">
+<code class="descname">get_liq_properties</code><span class="sig-paren">(</span><em>Tl</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Fluid.get_liq_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Fluid.get_liq_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute liquid properties at a given temperature Tl. The input temperature
+is bounded based on the maximum and minimum temperatures presented in the
+fluid property database.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>Tl:</em> liquid temperature [K]</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd><ul class="first last simple">
+<li>Bounded liquid temperature [K]</li>
+<li>Liquid density [kg/m3]</li>
+<li>Liquid thermal conductivity [W/mK]</li>
+<li>Liquid specific heat at constant volume [J/kgK]</li>
+<li>Liquid dynamic viscosity [Pa.s]</li>
+<li>Surface tension [N/m]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="smoothie.Fluid.get_vap_properties">
+<code class="descname">get_vap_properties</code><span class="sig-paren">(</span><em>Tg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Fluid.get_vap_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Fluid.get_vap_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute vapor properties at a given temperature Tg. The input temperature
+is bounded based on the maximum and minimum temperatures presented in the
+fluid property database.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>Tg:</em> ullage temperature [K]</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd><ul class="first last simple">
+<li>Bounded ullage temperature [K]</li>
+<li>Ideal gas constant for the vapor [J/kgK]</li>
+<li>Reference saturation temperature [K]</li>
+<li>Reference saturation pressure [Pa]</li>
+<li>Vapor thermal conductivity [W/mK]</li>
+<li>Vapor specific heat at constant volume [J/kgK]</li>
+<li>Vapor dynamic viscosity [Pa.s]</li>
+<li>Latent heat of vaporization/condensation [J/kg]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="smoothie.Fluid.get_liq_density">
+<code class="descname">get_liq_density</code><span class="sig-paren">(</span><em>Ti</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Fluid.get_liq_density"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Fluid.get_liq_density" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute liquid density at temperature Tl. The input temperature
+is bounded based on the maximum and minimum temperatures presented in the
+fluid property database.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>Tl:</em> liquid temperature [K]</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd><ul class="first last simple">
+<li>Liquid density [kg/m3]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smoothie.Inert">
+<em class="property">class </em><code class="descclassname">smoothie.</code><code class="descname">Inert</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Inert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Inert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize fluid properties for the inert gas phase. This class is
+initialized by inserting the name of the gas (i.e. He or Air) and importing
+its properties from from a separate Python script. The properties were
+obtained from the NIST (National Institute of Standards and Technology).</p>
+<dl class="docutils">
+<dt><strong>Constant fluid properties:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>R_a</em>: Ideal gas constant of the inert gas [J/kgK]</li>
+<li><em>gamma</em>: Ratio of specific heats [-]</li>
+</ul>
+</dd>
+<dt><strong>Temperature-dependent properties:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>k</em>: Polynomial coefficients for the inert gas thermal conductivity</li>
+<li><em>cv</em>: Polynomial coefficients for the inert gas specific heat at constant volume</li>
+<li><em>mu</em>: Polynomial coefficients for the inert gas dynamic viscosity</li>
+</ul>
+</dd>
+</dl>
+<p>The properties were obtained in saturation conditions for different temperatures.
+Then, they were fitted with a high order polynomial and the coefficients are
+stored in each respective variable.</p>
+<dl class="method">
+<dt id="smoothie.Inert.get_gas_properties">
+<code class="descname">get_gas_properties</code><span class="sig-paren">(</span><em>Tg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Inert.get_gas_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Inert.get_gas_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute inert gas properties at temperature Tg. The input temperature
+is bounded based on the maximum and minimum temperatures presented in the
+fluid property database.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>Tg:</em> ullage temperature [K]</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd><ul class="first last simple">
+<li>Bounded ullage temperature [K]</li>
+<li>Ideal gas constant for the inert gas [J/kgK]</li>
+<li>Reference saturation temperature [K]</li>
+<li>Reference saturation pressure [Pa]</li>
+<li>Inert gas thermal conductivity [W/mK]</li>
+<li>Inert gas specific heat at constant volume [J/kgK]</li>
+<li>Inert gas dynamic viscosity [Pa.s]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smoothie.Slosh">
+<em class="property">class </em><code class="descclassname">smoothie.</code><code class="descname">Slosh</code><span class="sig-paren">(</span><em>R</em>, <em>H</em>, <em>k_h</em>, <em>k_w</em>, <em>k_a</em>, <em>g=9.8</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Slosh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Slosh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that contains the sloshing cell dimensions and excitation parameters.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>R</em>: cell radius [m]</li>
+<li><em>H</em>: total cell height [m]</li>
+<li><em>k_H</em>: cell fill ratio (liquid height over total height) [-]</li>
+<li><em>k_w</em>: non-dimensional excitation frequency (<em>f</em>/<em>f11</em>) [-]</li>
+<li><em>k_a</em>: non-dimensional excitation amplitude (<em>A0</em>/<em>R</em>) [-]</li>
+</ul>
+</dd>
+<dt><strong>Calculated variables:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>h</em>: liquid fill height [m]</li>
+<li><em>V</em>: total cell volume [m3]</li>
+<li><em>V_l</em>: liquid volume [m3]</li>
+<li><em>V_g</em>: ullage volume [m3]</li>
+<li><em>S_i</em>: cross-sectional area [m2]</li>
+<li><em>w11</em>: natural frequency [rad/s]</li>
+<li><em>f11</em>: natural frequency [Hz]</li>
+<li><em>Omega</em>: excitation frequency [rad/s]</li>
+<li><em>f</em>: excitation frequency [Hz]</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="smoothie.Slosh.get_sloshing_cell_dimensions">
+<code class="descname">get_sloshing_cell_dimensions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Slosh.get_sloshing_cell_dimensions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Slosh.get_sloshing_cell_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Return sloshing cell dimensions:</dt>
+<dd><ul class="first last simple">
+<li><em>R</em>: cell radius [m]</li>
+<li><em>H</em>: total cell height [m]</li>
+<li><em>h</em>: liquid height [m]</li>
+<li><em>V</em>: total cell volume [m3]</li>
+<li><em>Si</em>: cross-sectional area [m2]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="smoothie.Slosh.get_sloshing_cell_params_0d">
+<code class="descname">get_sloshing_cell_params_0d</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Slosh.get_sloshing_cell_params_0d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Slosh.get_sloshing_cell_params_0d" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Return sloshing cell parameters required by the 0D model:</dt>
+<dd><ul class="first last simple">
+<li><em>V_l</em>: liquid volume [m3]</li>
+<li><em>V_g</em>: ullage volume [m3]</li>
+<li><em>Si</em>: cross-sectional area [m2]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="smoothie.Slosh.get_excitation_conditions">
+<code class="descname">get_excitation_conditions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Slosh.get_excitation_conditions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Slosh.get_excitation_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Return sloshing excitation conditions:</dt>
+<dd><ul class="first last simple">
+<li><em>A0</em>: excitation amplitude [m]</li>
+<li><em>f11</em>: natural frequency [Hz]</li>
+<li><em>f</em>: excitation frequency [Hz]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="smoothie.Inputs">
+<em class="property">class </em><code class="descclassname">smoothie.</code><code class="descname">Inputs</code><span class="sig-paren">(</span><em>t</em>, <em>Tl</em>, <em>Tg</em>, <em>pg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that groups all the input variables together.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>t</em>: time-array [s]</li>
+<li><em>Tl</em>: liquid temperature [K]</li>
+<li><em>Tg</em>: ullage temperature [K]</li>
+<li><em>pg</em>: ullage pressure [Pa]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="smoothie.Derived_Inputs">
+<em class="property">class </em><code class="descclassname">smoothie.</code><code class="descname">Derived_Inputs</code><span class="sig-paren">(</span><em>t</em>, <em>Tl</em>, <em>Tg</em>, <em>pg</em>, <em>inert</em>, <em>fluid</em>, <em>slosh</em>, <em>ma_0</em>, <em>ml_0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#Derived_Inputs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.Derived_Inputs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class that groups all the variables derived from the input temperature and
+pressure data.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>t</em>: time-array [s]</li>
+<li><em>Tl</em>: liquid temperature [K]</li>
+<li><em>Tg</em>: ullage temperature [K]</li>
+<li><em>pg</em>: ullage pressure [Pa]</li>
+<li><em>fluid</em>: object that contains all liquid and vapor properties</li>
+<li><em>inert</em>: object that contains all inert gas properties</li>
+<li><em>slosh</em>: object that contains all sloshing properties</li>
+<li><em>ma_0</em>: initial mass of inert gas [kg]</li>
+<li><em>ml_0</em>: initial mass of liquid [kg]</li>
+</ul>
+</dd>
+<dt><strong>Calculated variables:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>mv</em>: vapor mass evolution over time [kg]</li>
+<li><em>ml</em>: liquid mass evolution over time [kg]</li>
+<li><em>Vl</em>: liquid volume over time [m3]</li>
+<li><em>Vg</em>: ullage volume over time [m3]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="smoothie.model_0d">
+<code class="descclassname">smoothie.</code><code class="descname">model_0d</code><span class="sig-paren">(</span><em>x</em>, <em>t</em>, <em>m_a</em>, <em>h_iL</em>, <em>h_m</em>, <em>V_l</em>, <em>V_g</em>, <em>fluid</em>, <em>inert</em>, <em>slosh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#model_0d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.model_0d" title="Permalink to this definition">¶</a></dt>
+<dd><p>0D model that predicts the evolution of the thermodynamic system inside of
+a closed reservoir when this is submitted to a sloshing excitation. The model
+is composed by two regions: the liquid and the ullage. The latter is a mixture
+between the vapor and the inert gas. The system is assumed to be closed with
+adiabatic walls.</p>
+<p>The model receives inputs regarding the initial pressure and temperature
+conditions as well as the heat and mass transfer coefficients between the
+gas and liquid. More detailed information is available in Technical Note
+TN5000-10-05 from the VKI cryogenics team.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>x</em>: initial conditions for the system of ODEs</li>
+<li><em>t</em>: time interval [s]</li>
+<li><em>m_a</em>: mass of inert gas [kg]</li>
+<li><em>h_iL</em>: heat transfer coefficient [W/m2K]</li>
+<li><em>h_m</em>: mass transfer coefficient [m/s]</li>
+<li><em>V_l</em>: liquid volume [m3]</li>
+<li><em>V_g</em>: ullage volume [m3]</li>
+<li><em>fluid</em>: object that contains all liquid and vapor properties</li>
+<li><em>inert</em>: object that contains all inert gas properties</li>
+<li><em>slosh</em>: object that contains all sloshing properties</li>
+</ul>
+</dd>
+<dt><strong>Outputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>dmvdt</em>: temporal rate of change of vapor mass [kg/s]</li>
+<li><em>dTgdt</em>: temporal rate of change of ullage temperature [K/s]</li>
+<li><em>dTldt</em>: temporal rate of change of liquid temperature [K/s]</li>
+<li><em>dpgdt</em>: temporal rate of change of ullage pressure [Pa/s]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="smoothie.cost_function">
+<code class="descclassname">smoothie.</code><code class="descname">cost_function</code><span class="sig-paren">(</span><em>X</em>, <em>t</em>, <em>inputs</em>, <em>derived_inputs</em>, <em>fluid</em>, <em>inert</em>, <em>slosh</em>, <em>ma_0</em>, <em>FOL_IN</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#cost_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.cost_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cost function that drives the optimization problem. The parameter we want to
+minimize is the overall relative error between the input pressure/temperature
+data and the predictions given by the 0D model.
+The cost function is evaluated several times with different values of the
+heat &amp; mass transfer coefficients as inputs in order to obtain the minimum
+error in the prediction.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>X</em>: initial estimate for the heat &amp; mass transfer coefficients [W/m2K, m/s]</li>
+<li><em>t</em>: time array [s]</li>
+<li><em>inputs</em>: input data (liquid temp, ullage temp, ullage pressure)</li>
+<li><em>derived_inputs</em>: variables computed from input data (vapor/liquid mass &amp; volumes)</li>
+<li><em>fluid</em>: object that contains all liquid and vapor properties</li>
+<li><em>inert</em>: object that contains all inert gas properties</li>
+<li><em>slosh</em>: object that contains all sloshing properties</li>
+<li><em>ma_0</em>: inert gas mass [kg]</li>
+<li><em>FOL_IN</em>: input folder location</li>
+</ul>
+</dd>
+<dt><strong>Outputs</strong>:</dt>
+<dd><ul class="first last simple">
+<li><em>err</em>: relative error between real data and model predictions</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="smoothie.inverse_method">
+<code class="descclassname">smoothie.</code><code class="descname">inverse_method</code><span class="sig-paren">(</span><em>n_trials</em>, <em>p_test</em>, <em>t</em>, <em>Tg</em>, <em>Tl</em>, <em>pg</em>, <em>fluid</em>, <em>inert</em>, <em>slosh</em>, <em>ma_0</em>, <em>ml_0</em>, <em>X_0</em>, <em>optimizer_method</em>, <em>FOL_IN</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smoothie.html#inverse_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#smoothie.inverse_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function that is used to apply the inverse method. The goal is to
+compute the heat &amp; mass transfer coefficients <em>h_heat</em> and <em>h_mass</em> which
+generate the temperature and pressure evolution observed in the input data.
+In order to handle noise in the data, a bootstrapping approach is taken.</p>
+<p>This function generates a distribution/population for the heat and mass
+transfer coefficients by comparing the input temperature &amp; pressure evolution
+with predictions given by the 0D model.</p>
+<dl class="docutils">
+<dt><strong>Inputs:</strong></dt>
+<dd><ul class="first last simple">
+<li><em>n_trials</em>: number of optimization loops for bootstrapping</li>
+<li><em>p_test</em>: ratio of testing data to total data</li>
+<li><em>t</em>: input time array [s]</li>
+<li><em>Tg</em>: input ullage temperature [K]</li>
+<li><em>Tl</em>: input liquid temperature [K]</li>
+<li><em>pg</em>: input ullage pressure [Pa]</li>
+<li><em>fluid</em>: object that contains all liquid and vapor properties</li>
+<li><em>inert</em>: object that contains all inert gas properties</li>
+<li><em>slosh</em>: object that contains all sloshing properties</li>
+<li><em>ma_0</em>: initial inert gas mass [kg]</li>
+<li><em>ml_0</em>: initial liquid mass [kg]</li>
+<li><em>X_0</em>: initial estimate for heat &amp; mass transfer coefficients [W/m2K,m/s]</li>
+<li><em>optimizer_method</em>: method for optimizer function (uses scipy.minimize())</li>
+<li><em>FOL_IN</em>: location where input data is stored</li>
+</ul>
+</dd>
+<dt><strong>Outputs</strong>:</dt>
+<dd><ul class="first last simple">
+<li><em>h_heat</em>: heat transfer coefficient distribution [W/m2K]</li>
+<li><em>h_mass</em>: mass transfer coefficient distribution [m/s]</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/smoothie.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">TSC Exam 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Pedro Marques.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

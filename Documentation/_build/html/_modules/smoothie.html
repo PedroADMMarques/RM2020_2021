@@ -1,0 +1,867 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>smoothie &#8212; TSC Exam 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">TSC Exam 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for smoothie</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Apr 12 13:56:57 2021</span>
+
+<span class="sd">@author: pedro</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="s2">&quot;inverSe Method for nOisy nOn-isoThermal slosHIng Experiments (SMOOTHIE)&quot;</span>
+
+<span class="c1">#%% Packages</span>
+
+<span class="kn">import</span> <span class="nn">time</span> <span class="c1"># Check process run times</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> <span class="c1"># Multiple reasons</span>
+<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="kn">import</span> <span class="n">odeint</span> <span class="c1"># Integrate system of ODEs</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">minimize</span> <span class="c1"># Minimize function (optimizer)</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span> <span class="c1"># Split train/test data</span>
+
+<span class="c1">#%% Fluid property functions</span>
+
+<span class="c1"># Obtain value from the coefficients in a polynomial fit</span>
+<div class="viewcode-block" id="value_from_coeffs"><a class="viewcode-back" href="../source/smoothie.html#smoothie.value_from_coeffs">[docs]</a><span class="k">def</span> <span class="nf">value_from_coeffs</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">x_i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Obtain function value from the coefficients in a polynomial fit at x-value</span>
+<span class="sd">    *x_i*.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs**</span>
+<span class="sd">        - *coeff*: array of coefficients for polynomial fit</span>
+<span class="sd">        - *x_i*: value at which the polynomial fit is computed</span>
+<span class="sd">    **Outputs:**</span>
+<span class="sd">        - *y_i*: result of the polynomial fit at *x_i*</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize result with zero</span>
+    <span class="n">y_i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Loop through the coefficients to build the result of the fit</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">coeff</span><span class="p">)):</span>
+        <span class="c1"># Sum a_n*x^n for all the coefficients n</span>
+        <span class="n">y_i</span> <span class="o">=</span> <span class="n">coeff</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">x_i</span><span class="o">**</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coeff</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="n">y_i</span>
+    <span class="c1"># Return value from the fitted polynomial</span>
+    <span class="k">return</span> <span class="n">y_i</span></div>
+
+<span class="c1"># Obtain data point from the polynomial fit of data</span>
+<div class="viewcode-block" id="value_from_fit"><a class="viewcode-back" href="../source/smoothie.html#smoothie.value_from_fit">[docs]</a><span class="k">def</span> <span class="nf">value_from_fit</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">n_pol</span><span class="p">,</span> <span class="n">x_i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Obtain data point from the polynomial fit of data. The real data is fitted</span>
+<span class="sd">    with a polynomial of n_pol order, and the property is evaluated at temperature</span>
+<span class="sd">    (or other condition) *x_i*.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *x_data*: data in the x-axis</span>
+<span class="sd">        - *y_data*: data in the y-axis</span>
+<span class="sd">        - *n_pol*: order of the polynomial</span>
+<span class="sd">        - *x_i*: value at which the polynomial fit is computed</span>
+<span class="sd">    **Outputs:**</span>
+<span class="sd">        Result of the polynomial fit at *x_i*</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Generate coefficients from polynomial fit</span>
+    <span class="n">coeff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x_data</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">y_data</span><span class="p">,</span><span class="n">deg</span><span class="o">=</span><span class="n">n_pol</span><span class="p">)</span>
+    <span class="c1"># Return the value from the fitted polynomial</span>
+    <span class="k">return</span> <span class="n">value_from_coeffs</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">x_i</span><span class="p">)</span></div>
+
+<span class="c1"># Obtain fluid property value (from coefficients or constant value)</span>
+<div class="viewcode-block" id="property_value"><a class="viewcode-back" href="../source/smoothie.html#smoothie.property_value">[docs]</a><span class="k">def</span> <span class="nf">property_value</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">x_i</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Obtain fluid property value (from coefficients or constant value) for a</span>
+<span class="sd">    given temperature (or other condition) *x_i*.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *y*: Can be either a scalar or an array. If it is a scalar, then y corres-</span>
+<span class="sd">               ponds to the actual property of the fluid. If it is an array, the it</span>
+<span class="sd">               corresponds to the array of coefficients of the polynomial fit as a</span>
+<span class="sd">               function of *x_i*</span>
+<span class="sd">        - *x_i*: data in the x-axis for the polynomial fit (temperature [K])</span>
+<span class="sd">    **Outputs:**</span>
+<span class="sd">        Fluid property *y* at temperature *x_i*</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If the input is a scalar, simply return it. This is used because there is</span>
+    <span class="c1"># no temperature information for some HFE7200 properties</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="k">return</span> <span class="n">y</span>
+    <span class="c1"># If the input is an array, calculate the property based on the poly coeffs</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="n">value_from_coeffs</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x_i</span><span class="p">)</span></div>
+
+<span class="c1"># Clausius-Clapeyron equation</span>
+<div class="viewcode-block" id="clausius_clapeyron_p"><a class="viewcode-back" href="../source/smoothie.html#smoothie.clausius_clapeyron_p">[docs]</a><span class="k">def</span> <span class="nf">clausius_clapeyron_p</span><span class="p">(</span><span class="n">R_v</span><span class="p">,</span><span class="n">dh</span><span class="p">,</span><span class="n">p_sat_ref</span><span class="p">,</span><span class="n">T_sat_ref</span><span class="p">,</span><span class="n">T_sat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clausius-Clapeyron equation that relates saturation temperature to saturation</span>
+<span class="sd">    pressure in a vapor phase given reference conditions *T_sat_ref* &amp; *p_sat_ref*.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *R_v*: ideal gas constant for the vapor phase [J/kgK]</span>
+<span class="sd">        - *dh*: latent heat of vaporization/evaporation [J/kg]</span>
+<span class="sd">        - *p_sat_ref*: saturation pressure at reference conditions [Pa]</span>
+<span class="sd">        - *T_sat_ref*: saturation temperature at reference conditions [K]</span>
+<span class="sd">        - *T_sat*: saturation temperature [K]</span>
+<span class="sd">    **Outputs:**</span>
+<span class="sd">        Saturation pressure for saturation temperature T_sat [Pa]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">p_sat_ref</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="p">(</span><span class="n">dh</span><span class="o">/</span><span class="n">R_v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">T_sat_ref</span> <span class="o">-</span> <span class="mi">1</span><span class="o">/</span><span class="n">T_sat</span><span class="p">)</span> <span class="p">)</span></div>
+
+<span class="c1"># Compute mass and volume of the vapor/liquid from the temp. &amp; pressure data</span>
+<div class="viewcode-block" id="get_mass_and_volumes"><a class="viewcode-back" href="../source/smoothie.html#smoothie.get_mass_and_volumes">[docs]</a><span class="k">def</span> <span class="nf">get_mass_and_volumes</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tl</span><span class="p">,</span><span class="n">Tg</span><span class="p">,</span><span class="n">pg</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">slosh</span><span class="p">,</span><span class="n">ma_0</span><span class="p">,</span><span class="n">ml_0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute mass and volume of the vapor/liquid from the input temperature and </span>
+<span class="sd">    pressure data. This is possible if initial inert gas and liquid mass are</span>
+<span class="sd">    known. In addition, the ideal gas law is used as an assumption in the</span>
+<span class="sd">    intermediate calculations.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *t*: time array information [s]</span>
+<span class="sd">        - *Tl*: liquid temperature [K]</span>
+<span class="sd">        - *Tg*: ullage temperature [K]</span>
+<span class="sd">        - *pg*: ullage pressure [Pa]</span>
+<span class="sd">        - *R_a*: inert gas ideal gas constant [J/kgK]</span>
+<span class="sd">        - *R_v*: vapor ideal gas constant [J/kgK]</span>
+<span class="sd">        - *fluid*: object that contains all liquid and vapor properties</span>
+<span class="sd">        - *inert*: object that contains all inert gas properties</span>
+<span class="sd">        - *slosh*: object that contains all sloshing properties </span>
+<span class="sd">        - *ma_0*: inert gas mass [kg]</span>
+<span class="sd">        - *ml_0*: liquid mass [kg]</span>
+<span class="sd">    **Outputs:**</span>
+<span class="sd">        - *mv*: vapor mass over time [kg]</span>
+<span class="sd">        - *ml*: liquid mass over time [kg]</span>
+<span class="sd">        - *Vl*: liquid volume over time [m3]</span>
+<span class="sd">        - *Vg*: vapor volume over time [m3]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Liquid density [kg/m3]</span>
+    <span class="n">rho_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+    <span class="c1"># Ideal gas costants for the vapor and inert gas [J/kg*K]</span>
+    <span class="n">R_a</span> <span class="o">=</span> <span class="n">inert</span><span class="o">.</span><span class="n">R_a</span>
+    <span class="n">R_v</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">R_v</span>
+    <span class="c1"># Compute liquid density for each time-step based on temperature [kg/m3]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)):</span> <span class="n">rho_l</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">get_liq_density</span><span class="p">(</span><span class="n">Tl</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="c1"># Vapor pressure - ideal gas mixture [Pa]</span>
+    <span class="n">pv</span> <span class="o">=</span> <span class="n">pg</span> <span class="o">-</span> <span class="n">ma_0</span><span class="o">*</span><span class="n">R_a</span><span class="o">*</span><span class="n">Tg</span><span class="o">/</span><span class="n">slosh</span><span class="o">.</span><span class="n">V_g</span>
+    <span class="c1"># Vapor mass - ideal gas law [kg]</span>
+    <span class="n">mv</span> <span class="o">=</span> <span class="n">pv</span><span class="o">*</span><span class="n">slosh</span><span class="o">.</span><span class="n">V_g</span><span class="o">/</span><span class="p">(</span><span class="n">R_v</span><span class="o">*</span><span class="n">Tg</span><span class="p">)</span>
+    <span class="c1"># Liquid mass [kg]</span>
+    <span class="n">ml</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">ml</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ml_0</span>
+    <span class="c1"># Compute liquid mass for each time-step based on evaporation/condensation</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span> <span class="n">ml</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ml</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">mv</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">mv</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> 
+    <span class="c1"># Liquid volume [m3]</span>
+    <span class="n">Vl</span> <span class="o">=</span> <span class="n">ml</span><span class="o">/</span><span class="n">rho_l</span>
+    <span class="c1"># Ullage volume [m3]</span>
+    <span class="n">Vg</span> <span class="o">=</span> <span class="n">slosh</span><span class="o">.</span><span class="n">V</span> <span class="o">-</span> <span class="n">Vl</span>
+    <span class="c1"># Return ullage/liquid mass &amp; volume</span>
+    <span class="k">return</span> <span class="n">mv</span><span class="p">,</span> <span class="n">ml</span><span class="p">,</span> <span class="n">Vl</span><span class="p">,</span> <span class="n">Vg</span></div>
+
+<span class="c1">#%% Classes</span>
+    
+<span class="c1"># Fluid (composed by liquid + vapor)</span>
+<div class="viewcode-block" id="Fluid"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Fluid">[docs]</a><span class="k">class</span> <span class="nc">Fluid</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize fluid properties for the vapor and liquid phases. This class is</span>
+<span class="sd">    initialized by inserting the name of the working fluid (i.e. H2, N2 or </span>
+<span class="sd">    HFE7200) and importing its properties from from a separate Python script.</span>
+<span class="sd">    The H2 and N2 properties were obtained from the NIST (National Institute of</span>
+<span class="sd">    Standards and Technology). The HFE7200 properties are more tricky to find,</span>
+<span class="sd">    so they were derived from three distinct sources:</span>
+<span class="sd">        - 3M Novec 7200 Engineered Fluid Product Information</span>
+<span class="sd">        - Pramod Warrier and Amyn S. Teja [2011]</span>
+<span class="sd">        - Rausch et. al [2015]</span>
+<span class="sd">    **Constant fluid properties:**</span>
+<span class="sd">        - *M_v*: Molar mass of the vapor species [kg/ml]</span>
+<span class="sd">        - *R_v*: Ideal gas constant of the vapor [J/kgK]</span>
+<span class="sd">        - *gamma*: Ratio of specific heats [-]</span>
+<span class="sd">        - *T_sat_ref*: Reference saturation temperature [K]</span>
+<span class="sd">        - *p_sat_ref*: Reference saturation pressure [Pa]</span>
+<span class="sd">    **Temperature-dependent properties:**</span>
+<span class="sd">        - *rho_l*: Polynomial coefficients for liquid density</span>
+<span class="sd">        - *k_l*: Polynomial coefficients for liquid thermal conductivity</span>
+<span class="sd">        - *cv_l*: Polynomial coefficients for liquid specific heat at constant volume</span>
+<span class="sd">        - *mu_l*: Polynomial coefficients for liquid dynamic viscosity</span>
+<span class="sd">        - *sigma*: Polynomial coefficients for the surface tension</span>
+<span class="sd">        - *k_v*: Polynomial coefficients for the vapor thermal conductivity</span>
+<span class="sd">        - *cv_v*: Polynomial coefficients for the vapor specific heat at constant volume</span>
+<span class="sd">        - *mu_v*: Polynomial coefficients for the vapor dynamic viscosity</span>
+<span class="sd">        - *dh*: Polynomial coefficients for the  latent heat for vaporization/condensation</span>
+<span class="sd">    The properties were obtained in saturation conditions for different temperatures.</span>
+<span class="sd">    Then, they were fitted with a high order polynomial and the coefficients are</span>
+<span class="sd">    stored in each respective variable.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Initializing fluid properties&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># Initialization of the fluid properties at reference conditions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        
+        <span class="c1"># Import fluid properties from database</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;H2&#39;</span><span class="p">:</span>   <span class="kn">import</span> <span class="nn">Properties.h2_properties</span> <span class="k">as</span> <span class="nn">data</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;N2&#39;</span><span class="p">:</span> <span class="kn">import</span> <span class="nn">Properties.n2_properties</span> <span class="k">as</span> <span class="nn">data</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;HFE7200&#39;</span><span class="p">:</span> <span class="kn">import</span> <span class="nn">Properties.hfe7200_properties</span> <span class="k">as</span> <span class="nn">data</span>
+        
+        <span class="c1"># Molar mass for the vapor species [kg/mol]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">M_v</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">M_v</span>
+        <span class="c1"># Ratio of specific heats [-]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">gamma</span>
+        <span class="c1"># Reference saturation temperature [K]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_sat_ref</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">T_sat_ref</span>
+        
+        <span class="c1"># Ideal gas constant [J/kg.K]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">R_v</span> <span class="o">=</span> <span class="mf">8.3144626</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">M_v</span>
+        
+        <span class="c1"># Maximum and minimum allowable temperatures [K]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">T_max</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">T_min</span>
+        
+        <span class="c1"># NIST Fluid procedure</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;H2&#39;</span> <span class="ow">or</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;N2&#39;</span><span class="p">:</span>
+            <span class="c1"># Reference saturation pressure [Pa]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_sat_ref</span> <span class="o">=</span> <span class="n">value_from_fit</span><span class="p">(</span><span class="n">x_data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_v</span><span class="p">,</span>
+                                            <span class="n">y_data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">p_v</span><span class="p">,</span>
+                                            <span class="n">n_pol</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+                                            <span class="n">x_i</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">T_sat_ref</span><span class="p">)</span>
+            <span class="c1"># Coefficients of the polynomials for the liquid properties</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rho_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_l</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">rho_l</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [kg/m3]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k_l</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_l</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">k_l</span><span class="p">,</span>   <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [W/mK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cv_l</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_l</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">cv_l</span><span class="p">,</span>  <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [J/kgK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mu_l</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_l</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">mu_l</span><span class="p">,</span>  <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [Pa*s]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_l</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [N/m]</span>
+            <span class="c1"># Coeficcients of the polynomials for the gas properties</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k_v</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_v</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">k_v</span><span class="p">,</span>  <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [W/mK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cv_v</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_v</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">cv_v</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [J/kgK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mu_v</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_v</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">mu_v</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [Pa*s]</span>
+            <span class="c1"># Latent heat of vaporization [J/kg]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dh</span>    <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_v</span><span class="p">,</span>
+                                    <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">hg</span><span class="o">-</span><span class="n">data</span><span class="o">.</span><span class="n">hf</span><span class="p">,</span><span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="c1"># HFE Fluid procedure</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;HFE7200&#39;</span><span class="p">:</span>
+            <span class="c1"># Reference saturation pressure [Pa]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_sat_ref</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">p_sat_ref</span>
+            <span class="c1"># Coefficients of the polynomials for the liquid properties</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rho_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_rausch</span><span class="p">,</span>  <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">rho_l</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="c1"># [kg/m3]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k_l</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_warrier</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">k_l</span><span class="p">,</span>   <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="c1"># [W/mK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cv_l</span>  <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">cv_l</span>                                         <span class="c1"># [J/kgK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mu_l</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_rausch</span><span class="p">,</span>  <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">mu_l</span><span class="p">,</span>  <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="c1"># [Pa*s]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_rausch</span><span class="p">,</span>  <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="c1"># [N/m]</span>
+            <span class="c1"># Coeficcients of the polynomials for the gas properties</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">k_v</span>   <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">k_v</span>                                       <span class="c1"># [W/mK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cv_v</span>  <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">cv_v</span>                                      <span class="c1"># [J/kgK]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mu_v</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T_rausch</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">mu_v</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># [Pa*s]</span>
+            <span class="c1"># Latent heat of vaporization [J/kg]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dh</span>    <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">dh</span>
+    
+    <span class="s1">&#39;Get liquid properties for temperature Tl&#39;</span>
+<div class="viewcode-block" id="Fluid.get_liq_properties"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Fluid.get_liq_properties">[docs]</a>    <span class="k">def</span> <span class="nf">get_liq_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Tl</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute liquid properties at a given temperature Tl. The input temperature</span>
+<span class="sd">        is bounded based on the maximum and minimum temperatures presented in the</span>
+<span class="sd">        fluid property database.</span>
+<span class="sd">        </span>
+<span class="sd">        **Inputs:**</span>
+<span class="sd">            - *Tl:* liquid temperature [K]</span>
+<span class="sd">        **Outputs:**</span>
+<span class="sd">            - Bounded liquid temperature [K]</span>
+<span class="sd">            - Liquid density [kg/m3]</span>
+<span class="sd">            - Liquid thermal conductivity [W/mK]</span>
+<span class="sd">            - Liquid specific heat at constant volume [J/kgK]</span>
+<span class="sd">            - Liquid dynamic viscosity [Pa.s]</span>
+<span class="sd">            - Surface tension [N/m]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Impose bounds on the temperature</span>
+        <span class="k">if</span> <span class="n">Tl</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span><span class="p">:</span>   <span class="n">Tl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span>
+        <span class="k">elif</span> <span class="n">Tl</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span><span class="p">:</span> <span class="n">Tl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span>
+        <span class="c1"># Return the values of the properties based on the temperature and fits</span>
+        <span class="k">return</span> <span class="n">Tl</span><span class="p">,</span><span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rho_l</span><span class="p">,</span> <span class="n">Tl</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k_l</span><span class="p">,</span>   <span class="n">Tl</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cv_l</span><span class="p">,</span>  <span class="n">Tl</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu_l</span><span class="p">,</span>  <span class="n">Tl</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="n">Tl</span><span class="p">)</span></div>
+    
+    <span class="s1">&#39;Get vapor properties for temperature Tg&#39;</span>                       
+<div class="viewcode-block" id="Fluid.get_vap_properties"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Fluid.get_vap_properties">[docs]</a>    <span class="k">def</span> <span class="nf">get_vap_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Tg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute vapor properties at a given temperature Tg. The input temperature</span>
+<span class="sd">        is bounded based on the maximum and minimum temperatures presented in the</span>
+<span class="sd">        fluid property database.</span>
+<span class="sd">        </span>
+<span class="sd">        **Inputs:**</span>
+<span class="sd">            - *Tg:* ullage temperature [K]</span>
+<span class="sd">        **Outputs:**</span>
+<span class="sd">            - Bounded ullage temperature [K]</span>
+<span class="sd">            - Ideal gas constant for the vapor [J/kgK]</span>
+<span class="sd">            - Reference saturation temperature [K]</span>
+<span class="sd">            - Reference saturation pressure [Pa]</span>
+<span class="sd">            - Vapor thermal conductivity [W/mK]</span>
+<span class="sd">            - Vapor specific heat at constant volume [J/kgK]</span>
+<span class="sd">            - Vapor dynamic viscosity [Pa.s]</span>
+<span class="sd">            - Latent heat of vaporization/condensation [J/kg]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Impose bounds on the temperature</span>
+        <span class="k">if</span> <span class="n">Tg</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span><span class="p">:</span>   <span class="n">Tg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span>
+        <span class="k">elif</span> <span class="n">Tg</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span><span class="p">:</span> <span class="n">Tg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span>
+        <span class="c1"># Return the values of the properties based on the temperature and fits</span>
+        <span class="k">return</span> <span class="n">Tg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">R_v</span><span class="p">,</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">T_sat_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_sat_ref</span><span class="p">,</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k_v</span><span class="p">,</span> <span class="n">Tg</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cv_v</span><span class="p">,</span> <span class="n">Tg</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu_v</span><span class="p">,</span> <span class="n">Tg</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dh</span><span class="p">,</span>   <span class="n">Tg</span><span class="p">)</span></div>
+    
+    <span class="s1">&#39;Get liquid density for temperature Ti&#39;</span>
+<div class="viewcode-block" id="Fluid.get_liq_density"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Fluid.get_liq_density">[docs]</a>    <span class="k">def</span> <span class="nf">get_liq_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Ti</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute liquid density at temperature Tl. The input temperature</span>
+<span class="sd">        is bounded based on the maximum and minimum temperatures presented in the</span>
+<span class="sd">        fluid property database.</span>
+<span class="sd">        </span>
+<span class="sd">        **Inputs:**</span>
+<span class="sd">            - *Tl:* liquid temperature [K]</span>
+<span class="sd">        **Outputs:**</span>
+<span class="sd">            - Liquid density [kg/m3]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Impose bounds on the temperature</span>
+        <span class="k">if</span> <span class="n">Ti</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span><span class="p">:</span>   <span class="n">Ti</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span>
+        <span class="k">elif</span> <span class="n">Ti</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span><span class="p">:</span> <span class="n">Ti</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span>
+        <span class="c1"># Return the values of the properties based on the temperature and fits</span>
+        <span class="k">return</span> <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rho_l</span><span class="p">,</span> <span class="n">Ti</span><span class="p">)</span></div></div>
+    
+<span class="c1"># Inert gas (used to pressurized the ullage)</span>
+<div class="viewcode-block" id="Inert"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Inert">[docs]</a><span class="k">class</span> <span class="nc">Inert</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize fluid properties for the inert gas phase. This class is</span>
+<span class="sd">    initialized by inserting the name of the gas (i.e. He or Air) and importing</span>
+<span class="sd">    its properties from from a separate Python script. The properties were</span>
+<span class="sd">    obtained from the NIST (National Institute of Standards and Technology).</span>
+<span class="sd">    </span>
+<span class="sd">    **Constant fluid properties:**</span>
+<span class="sd">        - *R_a*: Ideal gas constant of the inert gas [J/kgK]</span>
+<span class="sd">        - *gamma*: Ratio of specific heats [-]</span>
+<span class="sd">    **Temperature-dependent properties:**</span>
+<span class="sd">        - *k*: Polynomial coefficients for the inert gas thermal conductivity</span>
+<span class="sd">        - *cv*: Polynomial coefficients for the inert gas specific heat at constant volume</span>
+<span class="sd">        - *mu*: Polynomial coefficients for the inert gas dynamic viscosity</span>
+<span class="sd">    The properties were obtained in saturation conditions for different temperatures.</span>
+<span class="sd">    Then, they were fitted with a high order polynomial and the coefficients are</span>
+<span class="sd">    stored in each respective variable.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Initializing inert gas properties&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># Initialization of the fluid properties at reference conditions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        
+        <span class="c1"># Import fluid properties from database</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;He&#39;</span><span class="p">:</span>    <span class="kn">import</span> <span class="nn">Properties.he_properties</span> <span class="k">as</span> <span class="nn">data</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;Air&#39;</span><span class="p">:</span> <span class="kn">import</span> <span class="nn">Properties.air_properties</span> <span class="k">as</span> <span class="nn">data</span>
+        
+        <span class="c1"># Maximum and minimum allowable temperatures [K]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">T_max</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">T_min</span>
+        
+        <span class="c1"># Ideal gas constant [J/kg.K]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">R_a</span>   <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">R</span>
+        <span class="c1"># Ratio of specific heats [-]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">gamma</span>
+        <span class="c1"># Thermal conductivity [W/mK]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">k</span><span class="p">,</span>  <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="c1"># Specific heat at constant volume [J/kgK]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">cv</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="c1"># Dynmic viscosity [Pa*s]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    
+    <span class="s1">&#39;Get inert gas properties for temperature Tg&#39;</span>
+<div class="viewcode-block" id="Inert.get_gas_properties"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Inert.get_gas_properties">[docs]</a>    <span class="k">def</span> <span class="nf">get_gas_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Tg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute inert gas properties at temperature Tg. The input temperature</span>
+<span class="sd">        is bounded based on the maximum and minimum temperatures presented in the</span>
+<span class="sd">        fluid property database.</span>
+<span class="sd">        </span>
+<span class="sd">        **Inputs:**</span>
+<span class="sd">            - *Tg:* ullage temperature [K]</span>
+<span class="sd">        **Outputs:**</span>
+<span class="sd">            - Bounded ullage temperature [K]</span>
+<span class="sd">            - Ideal gas constant for the inert gas [J/kgK]</span>
+<span class="sd">            - Reference saturation temperature [K]</span>
+<span class="sd">            - Reference saturation pressure [Pa]</span>
+<span class="sd">            - Inert gas thermal conductivity [W/mK]</span>
+<span class="sd">            - Inert gas specific heat at constant volume [J/kgK]</span>
+<span class="sd">            - Inert gas dynamic viscosity [Pa.s]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Impose bounds on the temperature</span>
+        <span class="k">if</span> <span class="n">Tg</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span><span class="p">:</span>   <span class="n">Tg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_max</span>
+        <span class="k">elif</span> <span class="n">Tg</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span><span class="p">:</span> <span class="n">Tg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_min</span>
+        <span class="c1"># Return the values of the properties based on the temperature and fits</span>
+        <span class="k">return</span> <span class="n">Tg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">R_a</span><span class="p">,</span> <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span> <span class="n">Tg</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cv</span><span class="p">,</span> <span class="n">Tg</span><span class="p">),</span>\
+               <span class="n">property_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span> <span class="n">Tg</span><span class="p">)</span></div></div>
+
+<span class="c1"># Sloshing tank</span>
+<div class="viewcode-block" id="Slosh"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Slosh">[docs]</a><span class="k">class</span> <span class="nc">Slosh</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that contains the sloshing cell dimensions and excitation parameters.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *R*: cell radius [m]</span>
+<span class="sd">        - *H*: total cell height [m]</span>
+<span class="sd">        - *k_H*: cell fill ratio (liquid height over total height) [-]</span>
+<span class="sd">        - *k_w*: non-dimensional excitation frequency (*f*/*f11*) [-]</span>
+<span class="sd">        - *k_a*: non-dimensional excitation amplitude (*A0*/*R*) [-]</span>
+<span class="sd">    **Calculated variables:**</span>
+<span class="sd">        - *h*: liquid fill height [m]</span>
+<span class="sd">        - *V*: total cell volume [m3]</span>
+<span class="sd">        - *V_l*: liquid volume [m3]</span>
+<span class="sd">        - *V_g*: ullage volume [m3]</span>
+<span class="sd">        - *S_i*: cross-sectional area [m2]</span>
+<span class="sd">        - *w11*: natural frequency [rad/s]</span>
+<span class="sd">        - *f11*: natural frequency [Hz]</span>
+<span class="sd">        - *Omega*: excitation frequency [rad/s]</span>
+<span class="sd">        - *f*: excitation frequency [Hz]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">R</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">k_h</span><span class="p">,</span><span class="n">k_w</span><span class="p">,</span><span class="n">k_a</span><span class="p">,</span><span class="n">g</span><span class="o">=</span><span class="mf">9.8</span><span class="p">):</span>
+        <span class="c1"># Sloshing cell radius converted from [mm] to [m]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">R</span> <span class="o">=</span> <span class="n">R</span><span class="o">*</span><span class="mf">1e-3</span>
+        <span class="c1"># Sloshing cell height converted from [mm] to [m]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="n">H</span><span class="o">*</span><span class="mf">1e-3</span>
+        <span class="c1"># Fill ratio of the liquid over the total height [-]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k_h</span> <span class="o">=</span> <span class="n">k_h</span>
+        <span class="c1"># Non-dimensional excitation frequency [-]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k_w</span> <span class="o">=</span> <span class="n">k_w</span>
+        <span class="c1"># Non-dimensional excitation amplitude [-]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k_a</span> <span class="o">=</span> <span class="n">k_a</span>
+        <span class="c1"># Liquid fill height [m]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_h</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">H</span>
+        <span class="c1"># Excitation amplitude [m]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">A0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_a</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span>
+        <span class="c1"># Natural frequency [rad/s]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w11</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">g</span><span class="o">*</span><span class="mf">1.841</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="mf">1.841</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="p">))</span>
+        <span class="c1"># Natural frequency [Hz]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f11</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w11</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="c1"># Excitation frequency [rad/s]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Omega</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_w</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">w11</span>
+        <span class="c1"># Ecitation frequency [Hz]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Omega</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="c1"># Sloshing cell volume [m3]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">H</span>
+        <span class="c1"># Liquid volume [m3]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V_l</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span>
+        <span class="c1"># Gas volume [m3]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V_g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_l</span>
+        <span class="c1"># Cross-section area [m2]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Si</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span>
+        
+    <span class="s1">&#39;Return sloshing cell dimensions&#39;</span>
+<div class="viewcode-block" id="Slosh.get_sloshing_cell_dimensions"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Slosh.get_sloshing_cell_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">get_sloshing_cell_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return sloshing cell dimensions:</span>
+<span class="sd">            - *R*: cell radius [m]</span>
+<span class="sd">            - *H*: total cell height [m]</span>
+<span class="sd">            - *h*: liquid height [m]</span>
+<span class="sd">            - *V*: total cell volume [m3]</span>
+<span class="sd">            - *Si*: cross-sectional area [m2]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Si</span></div>
+    
+    <span class="s1">&#39;Return sloshing cell parameters for 0D model&#39;</span>
+<div class="viewcode-block" id="Slosh.get_sloshing_cell_params_0d"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Slosh.get_sloshing_cell_params_0d">[docs]</a>    <span class="k">def</span> <span class="nf">get_sloshing_cell_params_0d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return sloshing cell parameters required by the 0D model:</span>
+<span class="sd">            - *V_l*: liquid volume [m3]</span>
+<span class="sd">            - *V_g*: ullage volume [m3]</span>
+<span class="sd">            - *Si*: cross-sectional area [m2]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_l</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_g</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Si</span></div>
+    
+    <span class="s1">&#39;Return excitation parameters&#39;</span>
+<div class="viewcode-block" id="Slosh.get_excitation_conditions"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Slosh.get_excitation_conditions">[docs]</a>    <span class="k">def</span> <span class="nf">get_excitation_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return sloshing excitation conditions:</span>
+<span class="sd">            - *A0*: excitation amplitude [m]</span>
+<span class="sd">            - *f11*: natural frequency [Hz]</span>
+<span class="sd">            - *f*: excitation frequency [Hz]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">A0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f11</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span></div></div>
+    
+<span class="c1"># Define class of Inputs (variables OBTAINED DIRECTLY from the input data)</span>
+<div class="viewcode-block" id="Inputs"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Inputs">[docs]</a><span class="k">class</span> <span class="nc">Inputs</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that groups all the input variables together.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *t*: time-array [s]</span>
+<span class="sd">        - *Tl*: liquid temperature [K]</span>
+<span class="sd">        - *Tg*: ullage temperature [K]</span>
+<span class="sd">        - *pg*: ullage pressure [Pa]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">Tl</span><span class="p">,</span><span class="n">Tg</span><span class="p">,</span><span class="n">pg</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span>  <span class="o">=</span> <span class="n">t</span>  <span class="c1"># Time [s]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Tl</span> <span class="o">=</span> <span class="n">Tl</span> <span class="c1"># Liq temperature [K]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Tg</span> <span class="o">=</span> <span class="n">Tg</span> <span class="c1"># Gas temperature [K]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pg</span> <span class="o">=</span> <span class="n">pg</span> <span class="c1"># Gas pressure [Pa]</span></div>
+
+<span class="c1"># Define class of Derived Inputs (variables COMPUTED from the input data)</span>
+<div class="viewcode-block" id="Derived_Inputs"><a class="viewcode-back" href="../source/smoothie.html#smoothie.Derived_Inputs">[docs]</a><span class="k">class</span> <span class="nc">Derived_Inputs</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that groups all the variables derived from the input temperature and</span>
+<span class="sd">    pressure data.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *t*: time-array [s]</span>
+<span class="sd">        - *Tl*: liquid temperature [K]</span>
+<span class="sd">        - *Tg*: ullage temperature [K]</span>
+<span class="sd">        - *pg*: ullage pressure [Pa]</span>
+<span class="sd">        - *fluid*: object that contains all liquid and vapor properties</span>
+<span class="sd">        - *inert*: object that contains all inert gas properties</span>
+<span class="sd">        - *slosh*: object that contains all sloshing properties </span>
+<span class="sd">        - *ma_0*: initial mass of inert gas [kg]</span>
+<span class="sd">        - *ml_0*: initial mass of liquid [kg]</span>
+<span class="sd">    **Calculated variables:**</span>
+<span class="sd">        - *mv*: vapor mass evolution over time [kg]</span>
+<span class="sd">        - *ml*: liquid mass evolution over time [kg]</span>
+<span class="sd">        - *Vl*: liquid volume over time [m3]</span>
+<span class="sd">        - *Vg*: ullage volume over time [m3]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">Tl</span><span class="p">,</span><span class="n">Tg</span><span class="p">,</span><span class="n">pg</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">slosh</span><span class="p">,</span><span class="n">ma_0</span><span class="p">,</span><span class="n">ml_0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ml</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Vl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Vg</span> <span class="o">=</span> \
+        <span class="n">get_mass_and_volumes</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tl</span><span class="p">,</span><span class="n">Tg</span><span class="p">,</span><span class="n">pg</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">slosh</span><span class="p">,</span><span class="n">ma_0</span><span class="p">,</span><span class="n">ml_0</span><span class="p">)</span></div>
+
+<span class="c1">#%% 0D model (ODE system)</span>
+
+<span class="c1"># 0D model for the temperature and pressure evolution</span>
+<div class="viewcode-block" id="model_0d"><a class="viewcode-back" href="../source/smoothie.html#smoothie.model_0d">[docs]</a><span class="k">def</span> <span class="nf">model_0d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">m_a</span><span class="p">,</span><span class="n">h_iL</span><span class="p">,</span><span class="n">h_m</span><span class="p">,</span><span class="n">V_l</span><span class="p">,</span><span class="n">V_g</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">slosh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    0D model that predicts the evolution of the thermodynamic system inside of</span>
+<span class="sd">    a closed reservoir when this is submitted to a sloshing excitation. The model</span>
+<span class="sd">    is composed by two regions: the liquid and the ullage. The latter is a mixture</span>
+<span class="sd">    between the vapor and the inert gas. The system is assumed to be closed with</span>
+<span class="sd">    adiabatic walls.</span>
+<span class="sd">    </span>
+<span class="sd">    The model receives inputs regarding the initial pressure and temperature</span>
+<span class="sd">    conditions as well as the heat and mass transfer coefficients between the</span>
+<span class="sd">    gas and liquid. More detailed information is available in Technical Note</span>
+<span class="sd">    TN5000-10-05 from the VKI cryogenics team.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *x*: initial conditions for the system of ODEs</span>
+<span class="sd">        - *t*: time interval [s]</span>
+<span class="sd">        - *m_a*: mass of inert gas [kg]</span>
+<span class="sd">        - *h_iL*: heat transfer coefficient [W/m2K]</span>
+<span class="sd">        - *h_m*: mass transfer coefficient [m/s]</span>
+<span class="sd">        - *V_l*: liquid volume [m3]</span>
+<span class="sd">        - *V_g*: ullage volume [m3]</span>
+<span class="sd">        - *fluid*: object that contains all liquid and vapor properties</span>
+<span class="sd">        - *inert*: object that contains all inert gas properties</span>
+<span class="sd">        - *slosh*: object that contains all sloshing properties </span>
+<span class="sd">    **Outputs:**</span>
+<span class="sd">        - *dmvdt*: temporal rate of change of vapor mass [kg/s]</span>
+<span class="sd">        - *dTgdt*: temporal rate of change of ullage temperature [K/s]</span>
+<span class="sd">        - *dTldt*: temporal rate of change of liquid temperature [K/s]</span>
+<span class="sd">        - *dpgdt*: temporal rate of change of ullage pressure [Pa/s]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1">### Initial conditions</span>
+    <span class="n">m_v</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span> <span class="n">Tg</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span> <span class="n">Tl</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span> <span class="n">p_g</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    
+    <span class="c1">### Import required properties/parameters</span>
+    
+    <span class="c1"># Liquid properties at temperature Tl</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">rho_l</span><span class="p">,</span> <span class="n">k_l</span><span class="p">,</span> <span class="n">cv_l</span><span class="p">,</span> <span class="n">mu_l</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">get_liq_properties</span><span class="p">(</span><span class="n">Tl</span><span class="p">)</span>
+    <span class="c1"># Vapor properties at temperature Tg</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">R_v</span><span class="p">,</span> <span class="n">T_sat_ref</span><span class="p">,</span> <span class="n">p_sat_ref</span><span class="p">,</span> <span class="n">k_v</span><span class="p">,</span> <span class="n">cv_v</span><span class="p">,</span> <span class="n">mu_v</span><span class="p">,</span> <span class="n">dh</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">get_vap_properties</span><span class="p">(</span><span class="n">Tg</span><span class="p">)</span>
+    <span class="c1"># Inert gas properties at temperature Tg</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">R_a</span><span class="p">,</span> <span class="n">k_a</span><span class="p">,</span> <span class="n">cv_a</span><span class="p">,</span> <span class="n">mu_a</span>     <span class="o">=</span> <span class="n">inert</span><span class="o">.</span><span class="n">get_gas_properties</span><span class="p">(</span><span class="n">Tg</span><span class="p">)</span>
+    
+    <span class="c1"># Sloshing cell dimensions required by the 0D model</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">S_i</span> <span class="o">=</span> <span class="n">slosh</span><span class="o">.</span><span class="n">get_sloshing_cell_params_0d</span><span class="p">()</span>
+    
+    <span class="c1">### Calculate required variables</span>
+    
+    <span class="c1"># Liquid mass at current time-step [kg]</span>
+    <span class="n">m_l</span> <span class="o">=</span> <span class="n">rho_l</span><span class="o">*</span><span class="n">V_l</span>
+    
+    <span class="c1"># Vapor density at current time-step [kg/m3]</span>
+    <span class="n">rho_v</span> <span class="o">=</span> <span class="n">m_v</span><span class="o">/</span><span class="n">V_g</span>
+    <span class="c1"># Inert gas density at current time-step [kg/m3]</span>
+    <span class="n">rho_a</span> <span class="o">=</span> <span class="n">m_a</span><span class="o">/</span><span class="n">V_g</span>
+    
+    <span class="c1"># Thermal effusivity of the dry-air</span>
+    <span class="n">b_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rho_a</span><span class="o">*</span><span class="n">cv_a</span><span class="o">*</span><span class="n">k_a</span><span class="p">)</span>
+    <span class="c1"># Thermal effusivity of the vapor</span>
+    <span class="n">b_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rho_v</span><span class="o">*</span><span class="n">cv_v</span><span class="o">*</span><span class="n">k_v</span><span class="p">)</span>
+    <span class="c1"># Thermal effusitivity of the ullage (mass-averaged)</span>
+    <span class="n">b_g</span> <span class="o">=</span> <span class="p">(</span><span class="n">m_a</span><span class="o">*</span><span class="n">b_a</span> <span class="o">+</span> <span class="n">m_v</span><span class="o">*</span><span class="n">b_v</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">m_a</span> <span class="o">+</span> <span class="n">m_v</span><span class="p">)</span>
+    <span class="c1"># Thermal effusivity of the liquid</span>
+    <span class="n">b_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">rho_l</span><span class="o">*</span><span class="n">cv_l</span><span class="o">*</span><span class="n">k_l</span><span class="p">)</span>
+    
+    <span class="c1"># Interface temperature (semi-infinite body assumption) [K]</span>
+    <span class="n">Ti</span> <span class="o">=</span> <span class="p">(</span><span class="n">b_g</span><span class="o">*</span><span class="n">Tg</span> <span class="o">+</span> <span class="n">b_l</span><span class="o">*</span><span class="n">Tl</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">b_g</span><span class="o">+</span><span class="n">b_l</span><span class="p">)</span>
+    
+    <span class="c1"># Liquid density in saturation conditions at current time-step [kg/m3]</span>
+    <span class="n">rho_l_sat</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">get_liq_density</span><span class="p">(</span><span class="n">Ti</span><span class="p">)</span>
+    
+    <span class="c1"># Vapor phase pressure [Pa]</span>
+    <span class="n">p_v</span> <span class="o">=</span> <span class="n">p_g</span> <span class="o">-</span> <span class="n">rho_a</span><span class="o">*</span><span class="n">R_a</span><span class="o">*</span><span class="n">Tg</span>
+    <span class="c1"># Vapor phase saturation pressure[Pa]</span>
+    <span class="n">p_v_sat</span> <span class="o">=</span> <span class="n">clausius_clapeyron_p</span><span class="p">(</span><span class="n">R_v</span><span class="p">,</span><span class="n">dh</span><span class="p">,</span><span class="n">p_sat_ref</span><span class="p">,</span><span class="n">T_sat_ref</span><span class="p">,</span><span class="n">Ti</span><span class="p">)</span>
+    
+    <span class="c1">### 0D Model Equations:</span>
+    
+    <span class="c1"># 1. Mass at transfer at the interface</span>
+    <span class="n">dmvdt</span> <span class="o">=</span> <span class="n">h_m</span><span class="o">*</span><span class="n">S_i</span><span class="o">*</span><span class="p">(</span> <span class="n">p_v_sat</span><span class="o">/</span><span class="p">(</span><span class="n">R_v</span><span class="o">*</span><span class="n">Ti</span><span class="p">)</span> <span class="o">-</span> <span class="n">p_v</span><span class="o">/</span><span class="p">(</span><span class="n">R_v</span><span class="o">*</span><span class="n">Tg</span><span class="p">)</span> <span class="p">)</span>
+    
+    <span class="c1"># 2. Liquid internal energy balance</span>
+    <span class="n">dTldt</span> <span class="o">=</span> <span class="p">((</span><span class="n">h_iL</span><span class="o">*</span><span class="n">S_i</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">m_l</span><span class="o">*</span><span class="n">cv_l</span><span class="p">))</span><span class="o">*</span><span class="p">(</span><span class="n">Ti</span> <span class="o">-</span> <span class="n">Tl</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">dmvdt</span><span class="o">/</span><span class="p">(</span><span class="n">m_l</span><span class="o">*</span><span class="n">cv_l</span><span class="p">))</span><span class="o">*</span><span class="p">(</span> <span class="n">cv_l</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Ti</span><span class="o">-</span><span class="n">Tl</span><span class="p">)</span> <span class="o">+</span> <span class="n">p_v</span><span class="o">/</span><span class="n">rho_l_sat</span> <span class="p">)</span>
+    
+    <span class="c1"># 3. Ullage internal energy balance</span>
+    <span class="n">dTgdt</span> <span class="o">=</span> <span class="o">-</span> <span class="p">((</span><span class="n">h_iL</span><span class="o">*</span><span class="n">S_i</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">m_a</span><span class="o">*</span><span class="n">cv_a</span><span class="o">+</span><span class="n">m_v</span><span class="o">*</span><span class="n">cv_v</span><span class="p">))</span><span class="o">*</span><span class="p">(</span><span class="n">Ti</span> <span class="o">-</span> <span class="n">Tl</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">dmvdt</span><span class="o">/</span><span class="p">(</span><span class="n">m_a</span><span class="o">*</span><span class="n">cv_a</span><span class="o">+</span><span class="n">m_v</span><span class="o">*</span><span class="n">cv_v</span><span class="p">))</span><span class="o">*</span><span class="p">(</span> <span class="n">cv_v</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Ti</span><span class="o">-</span><span class="n">Tg</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dh</span><span class="p">)</span> <span class="o">+</span> <span class="n">p_v</span><span class="o">/</span><span class="n">rho_l_sat</span><span class="p">)</span>
+    
+    <span class="c1"># 4. Ullage pressure evolution</span>
+    <span class="n">dpgdt</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">V_g</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">m_a</span><span class="o">*</span><span class="n">R_a</span><span class="o">+</span><span class="n">m_v</span><span class="o">*</span><span class="n">R_v</span><span class="p">)</span><span class="o">*</span><span class="n">dTgdt</span> <span class="o">+</span> <span class="p">(</span><span class="n">R_v</span><span class="o">*</span><span class="n">Tg</span><span class="o">/</span><span class="n">V_g</span><span class="p">)</span><span class="o">*</span><span class="n">dmvdt</span>
+    
+    <span class="k">return</span> <span class="p">[</span><span class="n">dmvdt</span><span class="p">,</span> <span class="n">dTgdt</span><span class="p">,</span> <span class="n">dTldt</span><span class="p">,</span> <span class="n">dpgdt</span><span class="p">]</span> </div>
+
+<span class="c1">#%% Define cost function</span>
+
+<div class="viewcode-block" id="cost_function"><a class="viewcode-back" href="../source/smoothie.html#smoothie.cost_function">[docs]</a><span class="k">def</span> <span class="nf">cost_function</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">inputs</span><span class="p">,</span><span class="n">derived_inputs</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">slosh</span><span class="p">,</span><span class="n">ma_0</span><span class="p">,</span><span class="n">FOL_IN</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cost function that drives the optimization problem. The parameter we want to</span>
+<span class="sd">    minimize is the overall relative error between the input pressure/temperature</span>
+<span class="sd">    data and the predictions given by the 0D model.</span>
+<span class="sd">    The cost function is evaluated several times with different values of the</span>
+<span class="sd">    heat &amp; mass transfer coefficients as inputs in order to obtain the minimum</span>
+<span class="sd">    error in the prediction.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *X*: initial estimate for the heat &amp; mass transfer coefficients [W/m2K, m/s]</span>
+<span class="sd">        - *t*: time array [s]</span>
+<span class="sd">        - *inputs*: input data (liquid temp, ullage temp, ullage pressure)</span>
+<span class="sd">        - *derived_inputs*: variables computed from input data (vapor/liquid mass &amp; volumes)</span>
+<span class="sd">        - *fluid*: object that contains all liquid and vapor properties</span>
+<span class="sd">        - *inert*: object that contains all inert gas properties</span>
+<span class="sd">        - *slosh*: object that contains all sloshing properties </span>
+<span class="sd">        - *ma_0*: inert gas mass [kg]</span>
+<span class="sd">        - *FOL_IN*: input folder location</span>
+<span class="sd">    **Outputs**:</span>
+<span class="sd">        - *err*: relative error between real data and model predictions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Function inputs</span>
+    <span class="n">h_iL</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># Heat transfer coefficient</span>
+    <span class="n">h_m</span>  <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># Mass transfer coefficient</span>
+    
+    <span class="c1">### Declare variable arrays solved by the ODE system</span>
+    
+    <span class="c1"># Initial conditions obtained from the real data</span>
+    <span class="n">Tg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">Tg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">Tg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [K]</span>
+    <span class="n">Tl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">Tl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">Tl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [K]</span>
+    <span class="n">pg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">pg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [pg]</span>
+    <span class="n">mv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">mv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">derived_inputs</span><span class="o">.</span><span class="n">mv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [kg]</span>
+    <span class="c1"># Declare array for the liquid mass evolution</span>
+    <span class="n">ml</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">ml</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">derived_inputs</span><span class="o">.</span><span class="n">ml</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [kg]</span>
+    <span class="c1"># Declare array for ullage and liquid volume evolution</span>
+    <span class="n">Vg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">Vg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">derived_inputs</span><span class="o">.</span><span class="n">Vg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [m3]\</span>
+    <span class="n">Vl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">));</span> <span class="n">Vl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">derived_inputs</span><span class="o">.</span><span class="n">Vl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [m3]</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Solving 0D model </span><span class="si">%s</span><span class="s1">, </span><span class="si">%s</span><span class="s1"> for </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">fluid</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">inert</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">FOL_IN</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; Heat transfer coeff.: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="n">h_iL</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; Mass transfer coeff.: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="n">h_m</span><span class="p">)</span>
+    
+    <span class="c1">### Run 0D model</span>
+    
+    <span class="c1"># Start timer for 0D model solver</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    
+    <span class="c1"># Solve 0D model with current estimate of the heat &amp; mass transfer coeffs.</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># Time-step</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+        
+        <span class="c1"># Initial solution for the ODE</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">[</span><span class="n">mv</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">Tg</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">Tl</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">pg</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+        
+        <span class="c1"># Solve system of ODEs for the current time-step</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">odeint</span><span class="p">(</span><span class="n">model_0d</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">ma_0</span><span class="p">,</span><span class="n">h_iL</span><span class="p">,</span><span class="n">h_m</span><span class="p">,</span><span class="n">Vl</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">Vg</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">fluid</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">slosh</span><span class="p">))</span>
+        
+        <span class="c1"># Update vapor mass [kg]</span>
+        <span class="n">mv</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Update ullage temperature [K]</span>
+        <span class="n">Tg</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># Update liquid temperature [K]</span>
+        <span class="n">Tl</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+        <span class="c1"># Update ullage pressure [Pa]</span>
+        <span class="n">pg</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+        
+        <span class="c1"># Update liquid mass [kg]</span>
+        <span class="n">ml</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ml</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">mv</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">mv</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="c1"># Update liquid volume [m3]</span>
+        <span class="n">Vl</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ml</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">fluid</span><span class="o">.</span><span class="n">get_liq_density</span><span class="p">(</span><span class="n">Tl</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># Update ullage volume [m3]</span>
+        <span class="n">Vg</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">slosh</span><span class="o">.</span><span class="n">V</span> <span class="o">-</span> <span class="n">Vl</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="c1">### Compute relative error between model predictions and input data</span>
+    <span class="n">err_Tl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">((</span><span class="n">Tl</span> <span class="o">-</span> <span class="n">inputs</span><span class="o">.</span><span class="n">Tl</span><span class="p">)</span><span class="o">/</span><span class="n">inputs</span><span class="o">.</span><span class="n">Tl</span><span class="p">)</span>
+    <span class="n">err_Tg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">((</span><span class="n">Tg</span> <span class="o">-</span> <span class="n">inputs</span><span class="o">.</span><span class="n">Tg</span><span class="p">)</span><span class="o">/</span><span class="n">inputs</span><span class="o">.</span><span class="n">Tg</span><span class="p">)</span>
+    <span class="n">err_pg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">((</span><span class="n">pg</span> <span class="o">-</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pg</span><span class="p">)</span><span class="o">/</span><span class="n">inputs</span><span class="o">.</span><span class="n">pg</span><span class="p">)</span>
+    
+    <span class="c1"># Root-mean square sum of the temperature/pressure relative errors</span>
+    <span class="n">err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">err_Tl</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">err_Tg</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">err_pg</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; Overall error: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="n">err</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&gt; Elapsed time time: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">err</span></div>
+
+<span class="c1">#%% Inverse method</span>
+<div class="viewcode-block" id="inverse_method"><a class="viewcode-back" href="../source/smoothie.html#smoothie.inverse_method">[docs]</a><span class="k">def</span> <span class="nf">inverse_method</span><span class="p">(</span><span class="n">n_trials</span><span class="p">,</span><span class="n">p_test</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">Tg</span><span class="p">,</span><span class="n">Tl</span><span class="p">,</span><span class="n">pg</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">slosh</span><span class="p">,</span><span class="n">ma_0</span><span class="p">,</span><span class="n">ml_0</span><span class="p">,</span><span class="n">X_0</span><span class="p">,</span><span class="n">optimizer_method</span><span class="p">,</span><span class="n">FOL_IN</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function that is used to apply the inverse method. The goal is to</span>
+<span class="sd">    compute the heat &amp; mass transfer coefficients *h_heat* and *h_mass* which</span>
+<span class="sd">    generate the temperature and pressure evolution observed in the input data.</span>
+<span class="sd">    In order to handle noise in the data, a bootstrapping approach is taken.</span>
+<span class="sd">    </span>
+<span class="sd">    This function generates a distribution/population for the heat and mass</span>
+<span class="sd">    transfer coefficients by comparing the input temperature &amp; pressure evolution</span>
+<span class="sd">    with predictions given by the 0D model.</span>
+<span class="sd">    </span>
+<span class="sd">    **Inputs:**</span>
+<span class="sd">        - *n_trials*: number of optimization loops for bootstrapping</span>
+<span class="sd">        - *p_test*: ratio of testing data to total data</span>
+<span class="sd">        - *t*: input time array [s]</span>
+<span class="sd">        - *Tg*: input ullage temperature [K]</span>
+<span class="sd">        - *Tl*: input liquid temperature [K]</span>
+<span class="sd">        - *pg*: input ullage pressure [Pa]</span>
+<span class="sd">        - *fluid*: object that contains all liquid and vapor properties</span>
+<span class="sd">        - *inert*: object that contains all inert gas properties</span>
+<span class="sd">        - *slosh*: object that contains all sloshing properties </span>
+<span class="sd">        - *ma_0*: initial inert gas mass [kg]</span>
+<span class="sd">        - *ml_0*: initial liquid mass [kg]</span>
+<span class="sd">        - *X_0*: initial estimate for heat &amp; mass transfer coefficients [W/m2K,m/s]</span>
+<span class="sd">        - *optimizer_method*: method for optimizer function (uses scipy.minimize())</span>
+<span class="sd">        - *FOL_IN*: location where input data is stored</span>
+<span class="sd">    **Outputs**:</span>
+<span class="sd">        - *h_heat*: heat transfer coefficient distribution [W/m2K]</span>
+<span class="sd">        - *h_mass*: mass transfer coefficient distribution [m/s]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize heat transfer coefficient population</span>
+    <span class="n">h_heat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_trials</span><span class="p">)</span>
+    <span class="c1"># Initialzie mass transfer coefficient population</span>
+    <span class="n">h_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_trials</span><span class="p">)</span>
+    
+    <span class="c1"># Apply inverse method &quot;n_trials&quot; times</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_trials</span><span class="p">):</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Split training and testing data&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># Split arrays to have 70% training and 30% validation data</span>
+        <span class="n">t_train</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span>\
+        <span class="n">Tg_train</span><span class="p">,</span><span class="n">_</span><span class="p">,</span>\
+        <span class="n">Tl_train</span><span class="p">,</span><span class="n">_</span><span class="p">,</span>\
+        <span class="n">pg_train</span><span class="p">,</span><span class="n">_</span> \
+        <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tg</span><span class="p">,</span><span class="n">Tl</span><span class="p">,</span><span class="n">pg</span><span class="p">,</span><span class="n">test_size</span><span class="o">=</span><span class="n">p_test</span><span class="p">)</span>
+        
+        <span class="c1"># Unsorted training data</span>
+        <span class="n">TRAIN_DATA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">t_train</span><span class="p">,</span><span class="n">Tg_train</span><span class="p">,</span><span class="n">Tl_train</span><span class="p">,</span><span class="n">pg_train</span><span class="p">))</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+        <span class="c1"># Sorted training data based on time</span>
+        <span class="n">TRAIN_DATA</span> <span class="o">=</span> <span class="n">TRAIN_DATA</span><span class="p">[</span><span class="n">TRAIN_DATA</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">argsort</span><span class="p">()]</span>
+    
+        <span class="c1"># Split sorted train and testing arrays</span>
+        <span class="n">t_train</span>  <span class="o">=</span> <span class="n">TRAIN_DATA</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [s]</span>
+        <span class="n">Tg_train</span> <span class="o">=</span> <span class="n">TRAIN_DATA</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># [K]</span>
+        <span class="n">Tl_train</span> <span class="o">=</span> <span class="n">TRAIN_DATA</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="c1"># [K]</span>
+        <span class="n">pg_train</span> <span class="o">=</span> <span class="n">TRAIN_DATA</span><span class="p">[:,</span><span class="mi">3</span><span class="p">]</span> <span class="c1"># [Pa]</span>
+    
+        <span class="c1"># Assign inputs &amp; derived inputs that are used in the cost function</span>
+        <span class="n">inputs</span>         <span class="o">=</span> <span class="n">Inputs</span><span class="p">(</span><span class="n">t_train</span><span class="p">,</span><span class="n">Tl_train</span><span class="p">,</span><span class="n">Tg_train</span><span class="p">,</span><span class="n">pg_train</span><span class="p">)</span>
+        <span class="n">derived_inputs</span> <span class="o">=</span> <span class="n">Derived_Inputs</span><span class="p">(</span><span class="n">t_train</span><span class="p">,</span><span class="n">Tl_train</span><span class="p">,</span><span class="n">Tg_train</span><span class="p">,</span>
+                                        <span class="n">pg_train</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">slosh</span><span class="p">,</span>
+                                        <span class="n">ma_0</span><span class="p">,</span><span class="n">ml_0</span><span class="p">)</span>
+        
+        <span class="c1">### Optimization</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> Method&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">optimizer_method</span><span class="p">))</span>
+        <span class="n">optimizer_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c1"># Optimization function (built-in from scipy)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span><span class="n">cost_function</span><span class="p">,</span> <span class="c1"># cost function</span>
+                       <span class="n">X_0</span><span class="p">,</span> <span class="c1"># initial condition</span>
+                       <span class="n">method</span> <span class="o">=</span> <span class="n">optimizer_method</span><span class="p">,</span>
+                       <span class="n">args</span>   <span class="o">=</span> <span class="p">(</span><span class="n">t_train</span><span class="p">,</span><span class="n">inputs</span><span class="p">,</span><span class="n">derived_inputs</span><span class="p">,</span><span class="n">fluid</span><span class="p">,</span><span class="n">inert</span><span class="p">,</span><span class="n">slosh</span><span class="p">,</span><span class="n">ma_0</span><span class="p">,</span><span class="n">FOL_IN</span><span class="p">),</span>
+                       <span class="n">options</span><span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ftol&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="s1">&#39;disp&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        <span class="c1"># Print results and total elapsed time</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> Result: h_heat = </span><span class="si">%f</span><span class="s1"> &amp; h_m = </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">optimizer_method</span><span class="p">,</span><span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> elapsed time time: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">optimizer_method</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">optimizer_time</span><span class="p">))</span>
+        <span class="c1"># Store the computed coefficients</span>
+        <span class="n">h_heat</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># [W/m2K]</span>
+        <span class="n">h_mass</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># [m/s]</span>
+    <span class="k">return</span> <span class="n">h_heat</span><span class="p">,</span> <span class="n">h_mass</span></div>
+
+
+<span class="c1">#%% End</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">TSC Exam 1.0.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Pedro Marques.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

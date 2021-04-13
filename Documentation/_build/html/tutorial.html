@@ -1,0 +1,407 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Tutorial &#8212; TSC Exam 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Project Summary" href="project.html" />
+    <link rel="prev" title="TSC Exam April 2021: Pedro Marques" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="project.html" title="Project Summary"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="TSC Exam April 2021: Pedro Marques"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">TSC Exam 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the application of the SMOOTHIE module presented in the <em>inverse_trial_single_core.py</em> script.
+The first step is to import the required packages, which is shown in the code block below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> <span class="c1"># Multiple reasons</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span> <span class="c1"># Dataframe management for .csv &amp; .txt files</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span> <span class="c1"># Plot smooth distribution</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span> <span class="c1"># Plots</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">gridspec</span> <span class="c1"># More control over subplot layout</span>
+
+<span class="c1"># Import Custom Classes</span>
+<span class="kn">from</span> <span class="nn">smoothie</span> <span class="kn">import</span> <span class="n">Fluid</span><span class="p">,</span><span class="n">Inert</span><span class="p">,</span><span class="n">Slosh</span>
+<span class="c1"># Import Inverse Method function</span>
+<span class="kn">from</span> <span class="nn">smoothie</span> <span class="kn">import</span> <span class="n">inverse_method</span>
+</pre></div>
+</div>
+<div class="section" id="user-settings">
+<h2>User settings<a class="headerlink" href="#user-settings" title="Permalink to this headline">¶</a></h2>
+<p>Then, the user should load the fluid properties for the liquid, the vapor and the inert gas phases. This is achieved with the <em>Fluid()</em> and <em>Inert()</em> classes loaded from the SMOOTHIE module. In addition, the sloshing container and excitation conditions must also be specified by creating an object from the <em>Slosh()</em> class.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Fluid and sloshing settings&#39;</span>
+<span class="c1"># Fluids: &#39;H2&#39;, &#39;N2&#39;, &#39;HFE7200&#39;</span>
+<span class="n">fluid</span> <span class="o">=</span> <span class="n">Fluid</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;N2&#39;</span><span class="p">)</span>
+<span class="c1"># Inert gas: &#39;Air&#39;, &#39;He&#39;</span>
+<span class="n">inert</span> <span class="o">=</span> <span class="n">Inert</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;He&#39;</span><span class="p">)</span>
+<span class="c1"># Sloshing cell dimensions &amp; excitations</span>
+<span class="c1"># R   - radius [mm]</span>
+<span class="c1"># H   - height [mm]</span>
+<span class="c1"># k_h - liquid fill ratio [-]</span>
+<span class="c1"># k_w - non-dimensional sloshing excitation [-]</span>
+<span class="c1"># k_a - non-dimensional sloshing amplitude  [-]</span>
+<span class="n">slosh</span> <span class="o">=</span> <span class="n">Slosh</span><span class="p">(</span><span class="n">R</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span><span class="n">H</span><span class="o">=</span><span class="mi">104</span><span class="p">,</span><span class="n">k_h</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span><span class="n">k_w</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span><span class="n">k_a</span><span class="o">=</span><span class="mf">0.06</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The directory where the input data is stored <em>FOL_IN</em> should be specified alongside the input file name <em>FILE_IN</em>. The user can also specify if the output of the script should be saved or not <em>save_OUT = True/False</em> and the corresponding save location <em>FOL_OUT</em>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Input/Output data settings&#39;</span>
+<span class="c1"># Folder where the input data is located</span>
+<span class="n">FOL_IN</span>  <span class="o">=</span> <span class="s1">&#39;Input_Cryo_Data&#39;</span>
+<span class="c1"># File that contains input data</span>
+<span class="n">FILE_IN</span> <span class="o">=</span> <span class="s1">&#39;model_data.txt&#39;</span>
+<span class="c1"># Output folder location</span>
+<span class="n">FOL_OUT</span>  <span class="o">=</span> <span class="s1">&#39;Output_Cryo_Data&#39;</span>
+<span class="c1"># Save output data? [True/False]</span>
+<span class="n">save_OUT</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<p>The final group of settings is related to the optimization settings that must be carried out to compute the missing coefficients. Here the total number of optimzations <em>n_trials</em> can be specified, as well as the percentage of validation/training data <em>p_test</em>, initial estimates for the heat and mass transfer coefficients <em>X_0</em> and, finally, which optimizer <em>optimizer_method</em> should be used.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;Optimization settings&#39;</span>
+<span class="c1"># Number of optimizations we will perform</span>
+<span class="n">n_trials</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="c1"># Percentage of validation/test data (default 30% validation and 70% training)</span>
+<span class="n">p_test</span> <span class="o">=</span> <span class="mf">0.3</span>
+<span class="c1"># Initial optimization conditions [heat-transfer coeff, mass-transfer coeff.]</span>
+<span class="n">X_0</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mf">1e-4</span><span class="p">]</span>
+<span class="c1"># Select optimization method</span>
+<span class="n">optimizer_method</span> <span class="o">=</span> <span class="s1">&#39;Nelder-Mead&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="pre-processing">
+<h2>Pre-processing<a class="headerlink" href="#pre-processing" title="Permalink to this headline">¶</a></h2>
+<p>The pre-processing consists of importing the time-resolved temperature and pressure data and introducing random noise in order to simulate the disturbances that come from experimental measurement techniques.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#%% Import data from 0D simulation</span>
+
+<span class="c1"># Read simulation output file</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">FOL_IN</span><span class="p">,</span><span class="n">FILE_IN</span><span class="p">)))</span>
+
+<span class="c1"># Time-array [s]</span>
+<span class="n">t</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Time [s]&#39;</span><span class="p">])</span>
+<span class="c1"># Ullage temperature [K]</span>
+<span class="n">Tg_clean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;T_g [K]&#39;</span><span class="p">])</span>
+<span class="c1"># Liquid temperature [K]</span>
+<span class="n">Tl_clean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;T_l [K]&#39;</span><span class="p">])</span>
+<span class="c1"># Interface temperature [K]</span>
+<span class="n">Ti_clean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;T_i [K]&#39;</span><span class="p">])</span>
+<span class="c1"># Ullage pressure [Pa]</span>
+<span class="n">pg_clean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;p_g [Pa]&#39;</span><span class="p">])</span>
+
+<span class="c1"># Initial liquid mass [kg]</span>
+<span class="n">ml_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;ml [kg]&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1"># Initial inert gas mass [kg]</span>
+<span class="n">ma_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;ma [kg]&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1">#%% Add random noise to the input data</span>
+<span class="c1"># Add Gaussian noise with mean 0 and variance 1</span>
+<span class="n">Tl</span> <span class="o">=</span> <span class="n">Tl_clean</span> <span class="o">+</span> <span class="mf">0.3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="n">Ti</span> <span class="o">=</span> <span class="n">Ti_clean</span> <span class="o">+</span> <span class="mf">0.3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="n">Tg</span> <span class="o">=</span> <span class="n">Tg_clean</span> <span class="o">+</span> <span class="mf">0.3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="n">pg</span> <span class="o">=</span> <span class="n">pg_clean</span> <span class="o">+</span> <span class="mi">50</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The noisy data can then be plotted in order to check if the synthethic signal-to-noise ratio is at an acceptable level.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Blue for cryogenic case</span>
+<span class="k">if</span> <span class="n">fluid</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;N2&#39;</span><span class="p">:</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;C0&#39;</span>
+<span class="c1"># Red for non-cryogenic case</span>
+<span class="k">elif</span> <span class="n">fluid</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;HFE7200&#39;</span><span class="p">:</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;C3&#39;</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">gs</span><span class="o">=</span><span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">width_ratios</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Ullage temperature</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tg</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tg_clean</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Clean data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Ullage temperature&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Temperature [K]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+<span class="c1"># Interface temperature</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Ti</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Ti_clean</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Clean data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Interface temperature&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Temperature [K]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+<span class="c1"># Liquid temperature</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tl</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tl_clean</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Clean data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Liquid temperature&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Temperature [K]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+<span class="c1"># Ullage pressure</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">pg</span><span class="o">/</span><span class="mf">1e5</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Noisy data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">pg_clean</span><span class="o">/</span><span class="mf">1e5</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span><span class="n">marker</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;Clean data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Ullage pressure&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Pressure [bar]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Time [s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">save_OUT</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/noisy_data.pdf&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">FOL_OUT</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="inverse-method">
+<h2>Inverse-method<a class="headerlink" href="#inverse-method" title="Permalink to this headline">¶</a></h2>
+<p>The algorithm for the computation of the ‘unknown’ coefficients from the temperature and pressure data is accomplished through the <em>inverse_method()</em> function from the SMOOTHIE module. Refer to the <strong>SMOOTHIE Module</strong> section of the documentation for an in-depth analysis of the different elements which drive this approach.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#%% Inverse method for heat &amp; mass transfer coeffs from temperature &amp; pressure</span>
+
+<span class="n">h_heat</span><span class="p">,</span> <span class="n">h_mass</span> <span class="o">=</span> <span class="n">inverse_method</span><span class="p">(</span><span class="n">n_trials</span><span class="p">,</span> <span class="c1"># No. of trials for bootstrapping</span>
+                                <span class="n">p_test</span><span class="p">,</span> <span class="c1"># Ratio of testing data [default: 30%]</span>
+                                <span class="n">t</span><span class="p">,</span>  <span class="c1"># Input data time array [s]</span>
+                                <span class="n">Tg</span><span class="p">,</span> <span class="c1"># Noisy ullage temperature [K]</span>
+                                <span class="n">Tl</span><span class="p">,</span> <span class="c1"># Noisy liquid temperature [K]</span>
+                                <span class="n">pg</span><span class="p">,</span> <span class="c1"># Noisy ullage pressure [Pa]</span>
+                                <span class="n">fluid</span><span class="p">,</span> <span class="c1"># Fluid properties class (liq. &amp; vapour)</span>
+                                <span class="n">inert</span><span class="p">,</span> <span class="c1"># Inert gas properties class</span>
+                                <span class="n">slosh</span><span class="p">,</span> <span class="c1"># Sloshing cell &amp; excitation properties class</span>
+                                <span class="n">ma_0</span><span class="p">,</span><span class="n">ml_0</span><span class="p">,</span> <span class="c1"># Initial inert gas &amp; liquid masss [kg]</span>
+                                <span class="n">X_0</span><span class="p">,</span> <span class="c1"># Initial condition for heat &amp; mass transf. coeffs</span>
+                                <span class="n">optimizer_method</span><span class="p">,</span> <span class="c1"># Optimizer method</span>
+                                <span class="n">FOL_IN</span> <span class="c1"># Input folder</span>
+                                <span class="p">)</span>
+</pre></div>
+</div>
+<p>The obtained heat and mass transfer population can be stored for later use/analysis.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">save_OUT</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># Header name for the .txt file</span>
+        <span class="n">header_name</span><span class="o">=</span><span class="s1">&#39;h_heat[W/m2K],h_mass[m/s]&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_trials</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">h_heat</span>
+        <span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">h_mass</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/coeffs_population.txt&#39;</span> <span class="o">%</span><span class="n">FOL_OUT</span><span class="p">),</span>
+                                   <span class="n">data</span><span class="p">,</span>
+                                   <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">,</span>
+                                   <span class="n">comments</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                                   <span class="n">header</span><span class="o">=</span><span class="n">header_name</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="compute-statistics-of-the-population">
+<h2>Compute statistics of the population<a class="headerlink" href="#compute-statistics-of-the-population" title="Permalink to this headline">¶</a></h2>
+<p>The previous step generates a population/distribution for the possible heat and mass transfer coefficients which minimize the error between the model predictions and the noisy input data.
+As a form of analysing these distributions, the following quantities are computed:</p>
+<ul class="simple">
+<li>Uncertainty in each coefficient (assuming Gaussian distributions) for a 95% confidence interval</li>
+<li>Mean prediction for each coefficient</li>
+<li>Covariance between the heat and mass transfer coefficients</li>
+</ul>
+<p>These processes are shown in the code block below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#%% Compute statistics</span>
+
+<span class="c1"># Uncertainty (95% confidence assuming normal distribution)</span>
+<span class="n">h_heat_unc</span> <span class="o">=</span> <span class="mf">1.96</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">h_heat</span><span class="p">);</span> <span class="n">h_mass_unc</span> <span class="o">=</span> <span class="mf">1.96</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">h_mass</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;h_heat = </span><span class="si">%e</span><span class="s1"> +- </span><span class="si">%e</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">h_heat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span><span class="n">h_heat_unc</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;h_mass = </span><span class="si">%e</span><span class="s1"> +- </span><span class="si">%e</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">h_mass</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span><span class="n">h_mass_unc</span><span class="p">))</span>
+
+<span class="c1"># Normalized variables</span>
+<span class="n">h_heat_norm</span> <span class="o">=</span> <span class="p">(</span><span class="n">h_heat</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">h_heat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">h_heat</span><span class="p">)</span>
+<span class="n">h_mass_norm</span> <span class="o">=</span> <span class="p">(</span><span class="n">h_mass</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">h_mass</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">h_mass</span><span class="p">)</span>
+<span class="c1"># Create dataset matrix</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">h_heat_norm</span><span class="p">,</span><span class="n">h_mass_norm</span><span class="p">))</span>
+<span class="c1"># Sample mean estimator</span>
+<span class="n">X_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">n_trials</span>
+<span class="c1"># Covariance matrix estimator</span>
+<span class="n">X_cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="plot-statistics-of-the-population">
+<h2>Plot statistics of the population<a class="headerlink" href="#plot-statistics-of-the-population" title="Permalink to this headline">¶</a></h2>
+<p>The analysis can be represented graphically as shown below (in normalized and non-normalized forms).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#%% Plot normalized statistics</span>
+
+<span class="c1">### Normalized histograms</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Normalized histograms&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">h_heat_norm</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$z_1=\frac{h_</span><span class="si">{heat}</span><span class="s1">-\mu_{h_</span><span class="si">{heat}</span><span class="s1">}}{\sigma_{h_</span><span class="si">{heat}</span><span class="s1">}}$&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">h_mass_norm</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$z_2=\frac{h_</span><span class="si">{mass}</span><span class="s1">-\mu_{h_</span><span class="si">{mass}</span><span class="s1">}}{\sigma_{h_</span><span class="si">{mass}</span><span class="s1">}}$&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$z_1,z_2$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$p(z_1),p(z_2)$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+<span class="c1"># Required for Multivariate Gaussian</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">multivariate_normal</span>
+
+<span class="c1"># Create great to plot Multivariate Gaussian</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">300</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">300</span><span class="p">))</span>
+<span class="n">POS</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">))</span>
+<span class="n">RV</span>   <span class="o">=</span> <span class="n">multivariate_normal</span><span class="p">(</span><span class="n">X_mean</span><span class="p">,</span><span class="n">X_cov</span><span class="p">)</span>
+
+<span class="c1">### Multivariate gaussian distribution</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Normalized Multivariate Gaussian Distribution&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">RV</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">POS</span><span class="p">),</span><span class="n">extend</span><span class="o">=</span><span class="s1">&#39;both&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$z_1$&#39;</span><span class="p">)</span> <span class="c1"># Normalized h_heat</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$z_2$&#39;</span><span class="p">)</span> <span class="c1"># Normalized h_mass</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">left</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span><span class="n">right</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">bottom</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span><span class="n">top</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">save_OUT</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/stats_normalized.pdf&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">FOL_OUT</span><span class="p">))</span>
+
+<span class="c1">#%% Plot non-normalized statistics</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="c1"># Histogram for heat transfer coefficient distribution [W/m2K]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">h_heat</span><span class="p">,</span>
+                 <span class="n">hist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">kde</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                 <span class="n">hist_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span><span class="s1">&#39;black&#39;</span><span class="p">},</span>
+                 <span class="n">kde_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;linewidth&#39;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="s1">&#39;shade&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Heat transfer coefficient [W/m$^2$K]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Frequency&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Probabiliy density function for $h_</span><span class="si">{heat}</span><span class="s1">$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+<span class="c1"># Histogram for mass transfer coefficient distribution [m/s]</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">distplot</span><span class="p">(</span><span class="n">h_mass</span><span class="p">,</span>
+                 <span class="n">hist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">kde</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+                 <span class="n">hist_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;edgecolor&#39;</span><span class="p">:</span><span class="s1">&#39;black&#39;</span><span class="p">},</span>
+                 <span class="n">kde_kws</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;linewidth&#39;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="s1">&#39;shade&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Mass transfer coefficient [m/s]&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Frequency&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Probabiliy density function for $h_</span><span class="si">{mass}</span><span class="s1">$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ticklabel_format</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;sci&quot;</span><span class="p">,</span> <span class="n">scilimits</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ticklabel_format</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;sci&quot;</span><span class="p">,</span> <span class="n">scilimits</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">save_OUT</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/stats.pdf&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">FOL_OUT</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tutorial</a><ul>
+<li><a class="reference internal" href="#user-settings">User settings</a></li>
+<li><a class="reference internal" href="#pre-processing">Pre-processing</a></li>
+<li><a class="reference internal" href="#inverse-method">Inverse-method</a></li>
+<li><a class="reference internal" href="#compute-statistics-of-the-population">Compute statistics of the population</a></li>
+<li><a class="reference internal" href="#plot-statistics-of-the-population">Plot statistics of the population</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">TSC Exam April 2021: Pedro Marques</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="project.html"
+                        title="next chapter">Project Summary</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tutorial.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="project.html" title="Project Summary"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="TSC Exam April 2021: Pedro Marques"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">TSC Exam 1.0.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Pedro Marques.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

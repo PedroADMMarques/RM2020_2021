@@ -1,0 +1,32 @@
+.. TSC Exam documentation master file, created by
+   sphinx-quickstart on Tue Apr 13 00:56:40 2021.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+TSC Exam April 2021: Pedro Marques
+==================================
+
+This documentation describes the SMOOTHIE (inverSe Method for nOisy nOn-isoThermal slosHIng Experiments) module that was developed in order to compute heat and mass transfer coefficients from non-isothermal sloshing data.
+The current implementation of the code tre
+
+
+Requirements:
+
+My project depends on xyz package.
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   tutorial
+   project
+   code
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
